@@ -24,65 +24,7 @@ public class MainActivity extends Activity implements  OnClickListener {
 
    public static class PostPointAsyncTask extends AsyncTask<Float, Void, Boolean>  {
         Socket socket;
-/*
-        @Override
-        protected String doInBackground(String... strings) {
-            String msg = strings[0];
-            String msgret = null;
-            ObjectOutputStream out = null;
-            ObjectInputStream in = null;
-            try {
-                out = new ObjectOutputStream(socket.getOutputStream());
-                out.writeUTF(msg);
-                out.flush();
-           //     msgret = in.readUTF().toString();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-            finally {
-                if(out != null)
-                    try {
-                        out.close();
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
-            /*    if(in != null)
-                    try {
-                        in.close();
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
-                    */
-/*            }
-            return msgret;
-        }
 
-
-        protected String onPostExecute(String... strings) {
-            String msg = strings[0];
-            String msgret = null;
-            ObjectInputStream in = null;
-            try {
-               msgret = in.readUTF().toString();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-            finally {
-                if(in != null)
-                    try {
-                        in.close();
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
-            }
-            return msgret;
-        } */
-/*
-        public PostPointAsyncTask() throws IOException {
-            socket = new Socket("192.168.43.64", PORT);
-            System.out.println();
-        }
-*/
         @Override
         protected Boolean doInBackground(Float ... point) {
             float x = point[0];
@@ -149,6 +91,8 @@ public class MainActivity extends Activity implements  OnClickListener {
 
         saveBtn = (ImageButton)findViewById(R.id.save_btn);
         saveBtn.setOnClickListener(this);
+        
+
     }
 
     public void paintClicked(View view){
@@ -185,27 +129,11 @@ public class MainActivity extends Activity implements  OnClickListener {
         drawView.setcurrentAction(getCurrentAction());
     }
 
-  //  public void clickUpdate(View v) {
-  //      API.receiveString();
-  //  }
-
-/*
-    public void clickf(View view) {
-        switch (findViewById(view.getId())) {
-            case R.id.line_btn:
-                setcurrentAction(2);
-            case R.id.circle_btn:
-                setcurrentAction(3);
-            case R.id.rect_btn:
-                setcurrentAction(4);
-            default:
-                setcurrentAction(0);
-        }
-        System.out.println("currentActionM1 = " + getCurrentAction());
-        drawView.setcurrentAction(getCurrentAction());
-        System.out.println("currentActionM2 = " + getCurrentAction());
+    public void clickUpdate(View v) {
+        drawView.updateClick();
     }
-*/
+
+
     @Override
     public void onClick(View view) {
         if(view.getId()==R.id.new_btn){
@@ -216,6 +144,7 @@ public class MainActivity extends Activity implements  OnClickListener {
             newDialog.setPositiveButton("Да", new DialogInterface.OnClickListener(){
                 public void onClick(DialogInterface dialog, int which){
                     drawView.startNew();
+                    API.sendClear();
                     dialog.dismiss();
                 }
             });

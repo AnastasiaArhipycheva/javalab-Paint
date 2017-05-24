@@ -12,6 +12,7 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.PrintWriter;
 import java.net.Socket;
+import java.util.ArrayList;
 
 /**
  * Created by Администратор on 18.05.2017.
@@ -20,11 +21,12 @@ import java.net.Socket;
 public class API {
 
     private static final int PORT =2551;
- //   private static MainActivity.PostPointAsyncTask task;
+
 
     private static PrintWriter out = null;
 
-    public static String json = null;
+  //  public static String[] json = null;
+    public static ArrayList<String> json = new ArrayList<String>();
 
     public static PrintWriter getOut() {
         return out;
@@ -45,15 +47,6 @@ public class API {
 
     }
 
-    /*
-        static {
-            try {
-                task = new MainActivity.PostPointAsyncTask();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
-    */
     private static Socket socket;
 
     public static void createSocket() {
@@ -71,7 +64,7 @@ public class API {
                         String line = in.readLine();
                         System.out.println(line);
                       //  receiveJson(line);
-                        json=line;
+                        json.add(line);
                     }
 
                 } catch (IOException e) {
@@ -92,83 +85,17 @@ public class API {
     }
 
 
-    public static void receiveString() {
-        BufferedReader in = getIn();
+
+    public static void sendClear() {
+        JSONObject object = new JSONObject();
         try {
-            if (in != null) {
-                // out = new ObjectOutputStream(socket.getOutputStream());
-                receiveJson(in.readLine());
-                setIn(in);
-            }
-            // out.writeUTF(msg);
-            //    setOut(out);
-            //    out.flush();
-        } catch (IOException e) {
-            e.printStackTrace();
-        } /*finally {
-            if(out != null)
-                try {
-                    out.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-           }
-         */
-
-
-    }
-
-
-
-
-    public static void receiveJson(String json) {
-        if (json!=null)
-        try {
-            JSONObject object = new JSONObject(json);
-            if(object.optString("type").equals("point"))
-                receivePoint(object);
-            if(object.optString("type").equals("line"))
-                receiveLine(object);
-            if(object.optString("type").equals("circle"))
-                receiveCircle(object);
-            if(object.optString("type").equals("rect"))
-                receiveRect(object);
+            object.put("type", "clear");
+            String msg = object.toString();
+            sendString(msg);
         } catch (JSONException e) {
             e.printStackTrace();
         }
-
     }
-    public static void receivePoint(JSONObject json) {
-        float x = (float) json.optDouble("x");
-        float y = (float) json.optDouble("y");
-        System.out.println("point"+x+y);
-    }
-
-    public static void receiveLine(JSONObject json) {
-        float x1 = (float) json.optDouble("x1");
-        float x2 = (float) json.optDouble("x2");
-        float y1 = (float) json.optDouble("y1");
-        float y2 = (float) json.optDouble("y2");
-    //    DrawingView.setX12Y12(1,x1,x2, y1, y2);
-
-    }
-
-    public static void receiveCircle(JSONObject json) {
-        float x1 = (float) json.optDouble("x1");
-        float x2 = (float) json.optDouble("x2");
-        float y1 = (float) json.optDouble("y1");
-        float y2 = (float) json.optDouble("y2");
-     //   DrawingView.setX12Y12(2,x1,x2, y1, y2);
-    }
-
-    public static void receiveRect(JSONObject json) {
-        float x1 = (float) json.optDouble("x1");
-        float x2 = (float) json.optDouble("x2");
-        float y1 = (float) json.optDouble("y1");
-        float y2 = (float) json.optDouble("y2");
-     //   DrawingView.setX12Y12(3,x1,x2, y1, y2);
-    }
-
 
 
     public static void sendPoint(float x, float y, int color) {
@@ -185,9 +112,10 @@ public class API {
         }
     }
 
-    public static void sendLine(float x1, float y1, float x2, float y2) {
+    public static void sendLine(float x1, float y1, float x2, float y2, int  color) {
         JSONObject object = new JSONObject();
         try {
+            object.put("color", color);
             object.put("type", "line");
             object.put("x1", x1);
             object.put("x2", x2);
@@ -200,9 +128,10 @@ public class API {
         }
     }
 
-    public static void sendCircle(float x1, float y1, float x2, float y2) {
+    public static void sendCircle(float x1, float y1, float x2, float y2, int  color) {
         JSONObject object = new JSONObject();
         try {
+            object.put("color", color);
             object.put("type", "circle");
             object.put("x1", x1);
             object.put("x2", x2);
@@ -214,9 +143,10 @@ public class API {
             e.printStackTrace();
         }
     }
-    public static void sendRect(float x1, float y1, float x2, float y2) {
+    public static void sendRect(float x1, float y1, float x2, float y2, int  color) {
         JSONObject object = new JSONObject();
         try {
+            object.put("color", color);
             object.put("type", "rect");
             object.put("x1", x1);
             object.put("x2", x2);

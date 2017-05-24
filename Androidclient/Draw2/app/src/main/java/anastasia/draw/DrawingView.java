@@ -84,6 +84,7 @@ public class DrawingView extends View {
         canvasPaint = new Paint(Paint.DITHER_FLAG);
 
 
+
     }
 
 
@@ -109,6 +110,14 @@ public class DrawingView extends View {
        // update(API.json);
     }
 
+    public void updateClick(){
+        for (int i = 0; i<API.json.size(); i++) {
+            update(API.json.get(i));
+        }
+        API.json.clear();
+    }
+
+
     protected void update(String json) {
         if (json!=null)
             try {
@@ -121,6 +130,8 @@ public class DrawingView extends View {
                     receiveCircle(object);
                 if(object.optString("type").equals("rect"))
                     receiveRect(object);
+                if(object.optString("type").equals("clear"))
+                    startNew();
             } catch (JSONException e) {
                 e.printStackTrace();
             }
@@ -129,9 +140,11 @@ public class DrawingView extends View {
     public void receivePoint(JSONObject json) {
         float x = (float) json.optDouble("x");
         float y = (float) json.optDouble("y");
-        System.out.println("point"+x+y);
+        int color = (int)json.optInt("color");
+        drawPaint.setColor(color);
+     //   System.out.println("point"+x+y);
         drawPath.moveTo(x, y);
-        drawPath.lineTo(x, y);
+        drawPath.lineTo(x+1, y+1);
         drawCanvas.drawPath(drawPath, drawPaint);
         drawPath.reset();
         invalidate();
@@ -143,23 +156,46 @@ public class DrawingView extends View {
         float x2 = (float) json.optDouble("x2");
         float y1 = (float) json.optDouble("y1");
         float y2 = (float) json.optDouble("y2");
+        int color = (int)json.optInt("color");
+        drawPaint.setColor(color);
+
+        drawPath.moveTo(x1, y1);
+        drawPath.lineTo(x2, y2);
+        drawCanvas.drawPath(drawPath, drawPaint);
+        drawPath.reset();
+        invalidate();
         //    DrawingView.setX12Y12(1,x1,x2, y1, y2);
 
     }
 
-    public static void receiveCircle(JSONObject json) {
+    public void receiveCircle(JSONObject json) {
         float x1 = (float) json.optDouble("x1");
         float x2 = (float) json.optDouble("x2");
         float y1 = (float) json.optDouble("y1");
         float y2 = (float) json.optDouble("y2");
+        int color = (int)json.optInt("color");
+        drawPaint.setColor(color);
+
+        RectF oval = new RectF(x1,y1,x2,y2);
+        drawPath.addOval(oval,Path.Direction.CW);
+        drawCanvas.drawPath(drawPath, drawPaint);
+        drawPath.reset();
+        invalidate();
         //   DrawingView.setX12Y12(2,x1,x2, y1, y2);
     }
 
-    public static void receiveRect(JSONObject json) {
+    public void receiveRect(JSONObject json) {
         float x1 = (float) json.optDouble("x1");
         float x2 = (float) json.optDouble("x2");
         float y1 = (float) json.optDouble("y1");
         float y2 = (float) json.optDouble("y2");
+        int color = (int)json.optInt("color");
+        drawPaint.setColor(color);
+
+        drawPath.addRect(x1,y1, x2, y2, Path.Direction.CW);
+        drawCanvas.drawPath(drawPath, drawPaint);
+        drawPath.reset();
+        invalidate();
         //   DrawingView.setX12Y12(3,x1,x2, y1, y2);
     }
 
@@ -236,7 +272,7 @@ public class DrawingView extends View {
                     case MotionEvent.ACTION_UP:  //прекращение касания
                         drawPath.reset();
                         drawPath = DrawCircle(touchX, touchY);
-                        API.sendCircle(getSTX(), getSTY(), touchX, touchY);
+                        API.sendCircle(getSTX(), getSTY(), touchX, touchY,  paintColor);
                         drawCanvas.drawPath(drawPath, drawPaint);
                         drawPath.reset();
                         break;
@@ -259,7 +295,7 @@ public class DrawingView extends View {
                     case MotionEvent.ACTION_UP:  //прекращение касания
                         drawPath.reset();
                         drawPath = DrawRect(touchX, touchY);
-                        API.sendRect(getSTX(), getSTY(), touchX, touchY);
+                        API.sendRect(getSTX(), getSTY(), touchX, touchY,  paintColor);
                         drawCanvas.drawPath(drawPath, drawPaint);
                         drawPath.reset();
                         break;
@@ -292,7 +328,7 @@ public class DrawingView extends View {
         Path line2d = new Path();
         line2d.moveTo(getSTX(), getSTY());
         line2d.lineTo(x2, y2);
-        API.sendLine(getSTX(), getSTY(), x2, y2);
+        API.sendLine(getSTX(), getSTY(), x2, y2,  paintColor);
         return line2d;
     }
 
