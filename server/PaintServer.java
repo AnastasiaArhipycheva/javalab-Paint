@@ -1,16 +1,18 @@
 package com.unn;
 
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
+import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.ArrayList;
 import java.util.HashSet;
+import org.json.*;
+
 
 public class PaintServer {
-    private static final int PORT =2551;
+    private static final int PORT = 2551;
 
-    private static HashSet<ObjectOutputStream> writers = new HashSet<ObjectOutputStream>();
+    private static ArrayList<PrintWriter> writers = new ArrayList<PrintWriter>();
+    private static ArrayList<String> shapes = new ArrayList<String>();
 
     public static void main(String[] args) throws Exception {
         System.out.println("The server is running.");
@@ -23,12 +25,12 @@ public class PaintServer {
             listener.close();
         }
     }
+
     private static class Handler extends Thread {
 
         private Socket socket;
-        private ObjectInputStream in;
-        private ObjectOutputStream out;
-
+        private BufferedReader in;
+        private PrintWriter out;
 
         public Handler(Socket socket) {
             this.socket = socket;
@@ -36,23 +38,53 @@ public class PaintServer {
 
         public void run() {
             try {
-                out = new ObjectOutputStream(this.socket.getOutputStream());
-                in = new ObjectInputStream(this.socket.getInputStream());
-
+                in = new BufferedReader(new InputStreamReader(
+                        socket.getInputStream()));
+                out = new PrintWriter(socket.getOutputStream(), true);
                 writers.add(out);
-                while (!Thread.currentThread().isInterrupted()) {
-                    String json = in.readUTF();
-                    System.out.println(json);
-                    for (ObjectOutputStream writer : writers) {
-                        writer.writeUTF(json);
-                        writer.flush();
+                System.out.println("User connected!");
+
+                String json = "{\"color\":\"-16777216\",\"x\":-10,\"y\":-10,\"type\":\"point\"}";
+                writers.get(writers.size()-1).println(json);
+
+                if (!shapes.isEmpty())
+                {
+                    for (String shape : shapes)
+
+                        writers.get(writers.size()-1).println(shape);
+                }
+
+                while (true) {
+                    json = in.readLine();
+
+                    Object ob = json;
+                    JSONObject object = new JSONObject((String)ob);
+                    if (object.optString("type").equals("clear")) {
+                        shapes.clear();
+
+                        for (PrintWriter writer : writers) {
+                            writer.println(json);
+                            writer.flush();
+                        }
+
+                        json = "{\"color\":\"-16777216\",\"x\":-10,\"y\":-10,\"type\":\"point\"}";
+
+                        for (PrintWriter writer : writers) {
+                            writer.println(json);
+                            writer.flush();
+                        }
                     }
-                   // in.close();
+                    else {
+                        shapes.add(json);
+                        for (PrintWriter writer : writers) {
+                            writer.println(json);
+                            writer.flush();
+                        }
+                    }
                 }
             } catch (Exception e) {
-                e.printStackTrace();
-            }
-            finally {
+                System.out.println("User disconnected!");
+            } finally {
                 if (out != null) {
                     writers.remove(out);
                     if (in != null) try {

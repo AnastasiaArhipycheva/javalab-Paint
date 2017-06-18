@@ -3,65 +3,35 @@
  */
 
 import javax.swing.*;
-import javax.swing.event.ChangeEvent;
-import javax.swing.event.ChangeListener;
 import java.awt.event.*;
 import java.awt.*;
 import java.awt.geom.*;
 import java.io.*;
-import java.net.Socket;
-import java.net.UnknownHostException;
-import java.text.DecimalFormat;
 import java.util.*;
-// import org.json.simple.JSONObject;
-
-//import org.json.simple.*;
-
 
 
 @SuppressWarnings("serial")
 public class Paint extends JFrame {
-    JButton brushBut, lineBut, ellipseBut, rectBut, strokeBut, fillBut;
 
- //   JSlider transSlider;
-//    JLabel transLabel;
+    boolean flagUpdate = true;
+    JButton brushBut, lineBut, ellipseBut, rectBut, strokeBut, clearBut;
+    ArrayList<Shape> shapes = new ArrayList<Shape>();
+    ArrayList<Color> shapeStroke = new ArrayList<Color>();
+
     static ObjectInputStream in;
     static ObjectOutputStream out;
-    DecimalFormat dec = new DecimalFormat("#.##");
 
     Graphics2D graphSettings;
 
-    public Shape outShape=null;
-
     int currentAction = 1;
 
- //   float transparentVal = 1.0f;
-
-    Color strokeColor = Color.BLACK, fillColor = Color.BLACK;
+    Color strokeColor = Color.BLACK;
 
 
     public static void main(String[] args) throws IOException, ClassNotFoundException {
 
-
-
-        Paint p = new Paint();
-/*
-        try {
-            Socket socket = new Socket("localhost", 2550);
-
-            in = new ObjectInputStream(socket.getInputStream());
-            out = new ObjectOutputStream(socket.getOutputStream());
-
-        } catch (UnknownHostException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-*/
         API.createSocket();
-
-
+        new Paint();
 
     }
 
@@ -82,42 +52,24 @@ public class Paint extends JFrame {
 
 
         strokeBut = makeMeColorButton("Stroke", 5, true);
-       // fillBut = makeMeColorButton("Fill", 6, false);
+        clearBut = makeMeColorButton("Clear", 6, false);
 
         theBox.add(brushBut);
         theBox.add(lineBut);
         theBox.add(ellipseBut);
         theBox.add(rectBut);
         theBox.add(strokeBut);
-       // theBox.add(fillBut);
-
-      //  transLabel = new JLabel("Transparent: 1");
-
- //       transSlider = new JSlider(1, 99, 99);
-
-      //  ListenForSlider lForSlider = new ListenForSlider();
-
-
- //       transSlider.addChangeListener(lForSlider);
-//        theBox.add(transLabel);
-  //      theBox.add(transSlider);
-
+        theBox.add(clearBut);
         buttonPanel.add(theBox);
-
         this.add(buttonPanel, BorderLayout.SOUTH);
-
         this.add(new DrawingBoard(), BorderLayout.CENTER);
-
         this.setVisible(true);
     }
-
 
 
     public JButton makeMeButtons(String name, final int actionNum) {
         JButton theBut = new JButton();
         theBut.setText(name);
-
-
         theBut.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 currentAction = actionNum;
@@ -126,18 +78,15 @@ public class Paint extends JFrame {
         return theBut;
     }
 
-
-
     public JButton makeMeColorButton(String name, final int actionNum, final boolean stroke) {
         JButton theBut = new JButton();
         theBut.setText(name);
         theBut.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 if (stroke) {
-
-                    strokeColor = JColorChooser.showDialog(null, "Pick a Stroke", Color.BLACK);
+                    strokeColor = JColorChooser.showDialog(null, "Pick a Fill", Color.BLACK);
                 } else {
-                    fillColor = JColorChooser.showDialog(null, "Pick a Fill", Color.BLACK);
+                    API.sendClear();
                 }
             }
         });
@@ -145,18 +94,9 @@ public class Paint extends JFrame {
     }
 
 
-
-
     private class DrawingBoard extends JComponent {
 
-
-        ArrayList<Shape> shapes = new ArrayList<Shape>();
-    //    ArrayList<Color> shapeFill = new ArrayList<Color>();
-        ArrayList<Color> shapeStroke = new ArrayList<Color>();
- //       ArrayList<Float> transPercent = new ArrayList<Float>();
         Point drawStart, drawEnd;
-
-
         public DrawingBoard() {
             this.addMouseListener(new MouseAdapter() {
 
@@ -169,8 +109,6 @@ public class Paint extends JFrame {
                 }
 
 
-
-
                 public void mouseReleased(MouseEvent e) {
 
 
@@ -180,28 +118,25 @@ public class Paint extends JFrame {
                         if (currentAction == 2) {
                             aShape = drawLine(drawStart.x, drawStart.y,
                                     e.getX(), e.getY());
-                                    API.sendLine(drawStart.x, drawStart.y,  e.getX(), e.getY());
+                            API.sendLine(drawStart.x, drawStart.y, e.getX(), e.getY(), strokeColor);
                         } else if (currentAction == 3) {
                             aShape = drawEllipse(drawStart.x, drawStart.y,
                                     e.getX(), e.getY());
-                                    API.sendCircle(drawStart.x, drawStart.y, e.getX(), e.getY());
+                            API.sendCircle(drawStart.x, drawStart.y, e.getX(), e.getY(), strokeColor);
                         } else if (currentAction == 4) {
                             aShape = drawRectangle(drawStart.x, drawStart.y,
                                     e.getX(), e.getY());
-                                    API.sendRect(drawStart.x, drawStart.y, e.getX(), e.getY());
+                            API.sendRect(drawStart.x, drawStart.y, e.getX(), e.getY(), strokeColor);
                         }
 
                         shapes.add(aShape);
-                        API.receiveString();
-
-                   //     shapeFill.add(fillColor);
                         shapeStroke.add(strokeColor);
-
-            //            transPercent.add(transparentVal);
                         drawStart = null;
                         drawEnd = null;
 
                         repaint();
+                        API.shapes.clear();
+                        API.shapeStroke.clear();
                     }
                 }
             });
@@ -212,15 +147,10 @@ public class Paint extends JFrame {
                         int x = e.getX();
                         int y = e.getY();
                         Shape aShape = null;
-                        API.sendPoint(x,y,strokeColor);
-               //         strokeColor = fillColor;
+                        API.sendPoint(x, y, strokeColor);
                         aShape = drawBrush(x, y, 5, 5);
                         shapes.add(aShape);
-                        API.receiveString();
-               //         shapeFill.add(fillColor);
                         shapeStroke.add(strokeColor);
-
-           //             transPercent.add(transparentVal);
                     }
 
                     drawEnd = new Point(e.getX(), e.getY());
@@ -229,48 +159,64 @@ public class Paint extends JFrame {
             });
         }
 
-        public void paint(Graphics g) {
+        public void update() {
+            if (API.delFalg) {
+                shapes.clear();
+                shapeStroke.clear();
+                flagUpdate = true;
+                API.delFalg = false;
+            } else if (flagUpdate) {
+                shapes.addAll(API.shapes);
+                shapeStroke.addAll(API.shapeStroke);
 
-            graphSettings = (Graphics2D) g;
+                flagUpdate = false;
+            } else  {
 
-            graphSettings.setRenderingHint(RenderingHints.KEY_ANTIALIASING,
-                    RenderingHints.VALUE_ANTIALIAS_ON);
-
-            graphSettings.setStroke(new BasicStroke(4));
-
-            Iterator<Color> strokeCounter = shapeStroke.iterator();
-      //      Iterator<Color> fillCounter = shapeFill.iterator();
-
-  //          Iterator<Float> transCounter = transPercent.iterator();
-            for (Shape s : shapes) {
-
-      //          graphSettings.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, transCounter.next()));
-
-                graphSettings.setPaint(strokeCounter.next());
-                graphSettings.draw(s);
-
-        //        graphSettings.setPaint(fillCounter.next());
-       //         graphSettings.fill(s);
+                shapes.add(API.shapes.get(API.shapes.size() - 1));
+                shapeStroke.add(API.shapeStroke.get(API.shapeStroke.size() - 1));
             }
+            repaint();
+        }
 
-            if (drawStart != null && drawEnd != null) {
 
-                graphSettings.setComposite(AlphaComposite.getInstance(
-                        AlphaComposite.SRC_OVER, 0.40f));
+        public void paint(Graphics g) {
+            if (!API.shapes.isEmpty() && !API.shapeStroke.isEmpty()) {
+                update();
 
-                graphSettings.setPaint(Color.LIGHT_GRAY);
-                Shape aShape = null;
-                if (currentAction == 2) {
-                    aShape = drawLine(drawStart.x, drawStart.y,
-                            drawEnd.x, drawEnd.y);
-                } else if (currentAction == 3) {
-                    aShape = drawEllipse(drawStart.x, drawStart.y,
-                            drawEnd.x, drawEnd.y);
-                } else if (currentAction == 4) {
-                    aShape = drawRectangle(drawStart.x, drawStart.y,
-                            drawEnd.x, drawEnd.y);
+                graphSettings = (Graphics2D) g;
+
+                graphSettings.setRenderingHint(RenderingHints.KEY_ANTIALIASING,
+                        RenderingHints.VALUE_ANTIALIAS_ON);
+
+                graphSettings.setStroke(new BasicStroke(4));
+
+                Iterator<Color> strokeCounter = shapeStroke.iterator();
+
+                for (Shape s : shapes) {
+
+                    graphSettings.setPaint(strokeCounter.next());
+                    graphSettings.draw(s);
                 }
-                graphSettings.draw(aShape);
+
+                if (drawStart != null && drawEnd != null) {
+
+                    graphSettings.setComposite(AlphaComposite.getInstance(
+                            AlphaComposite.SRC_OVER, 0.40f));
+
+                    graphSettings.setPaint(Color.LIGHT_GRAY);
+                    Shape aShape = null;
+                    if (currentAction == 2) {
+                        aShape = drawLine(drawStart.x, drawStart.y,
+                                drawEnd.x, drawEnd.y);
+                    } else if (currentAction == 3) {
+                        aShape = drawEllipse(drawStart.x, drawStart.y,
+                                drawEnd.x, drawEnd.y);
+                    } else if (currentAction == 4) {
+                        aShape = drawRectangle(drawStart.x, drawStart.y,
+                                drawEnd.x, drawEnd.y);
+                    }
+                    graphSettings.draw(aShape);
+                }
             }
         }
 
@@ -309,22 +255,4 @@ public class Paint extends JFrame {
                     x1, y1, brushStrokeWidth, brushStrokeHeight);
         }
     }
-
-
-
-/*
-    private class ListenForSlider implements ChangeListener {
-
-        public void stateChanged(ChangeEvent e) {
-
- //           if (e.getSource() == transSlider) {
-
-
-      //          transLabel.setText("Transparent: " + dec.format(transSlider.getValue() * .01));
-
-      //          transparentVal = (float) (transSlider.getValue() * .01);
-            }
-        }
-    }
-    */
 }
