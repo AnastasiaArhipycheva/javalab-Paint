@@ -2,11 +2,6 @@
  * Created by Администратор on 20.05.2017.
  */
 
-package Desktop;
-import java.awt.*;
-import java.awt.geom.Ellipse2D;
-import java.awt.geom.Line2D;
-
 import java.awt.*;
 import java.awt.geom.Ellipse2D;
 import java.awt.geom.Line2D;
